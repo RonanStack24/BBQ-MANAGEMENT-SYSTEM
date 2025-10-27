@@ -53,10 +53,10 @@ if (isset($_POST['register'])) {
   <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.05)_0%,transparent_70%)] opacity-40 animate-[smoke_12s_ease-in-out_infinite_alternate]"></div>
   <!-- flame glow -->
   <div class="absolute bottom-0 left-1/2 w-[350px] h-[250px] bg-[radial-gradient(circle,rgba(255,87,34,0.4)_0%,transparent_70%)] blur-3xl transform -translate-x-1/2 animate-[glow_4s_ease-in-out_infinite_alternate]"></div>
-
+  
   <div class="flex flex-col md:flex-row bg-neutral-800 rounded-lg shadow-2xl overflow-hidden w-[90%] max-w-4xl relative z-10 border border-neutral-700">
     <div class="flex-1 hidden md:flex justify-center items-center bg-gradient-to-br from-neutral-800 to-neutral-900 border-r border-neutral-700 animate-[flicker_2s_ease-in-out_infinite]"></div>
-
+     
     <div class="flex-1 bg-neutral-900 p-8 flex flex-col justify-center">
       <?php if ($error): ?>
         <div class="mb-4 p-3 rounded bg-red-700 text-white"><?= htmlspecialchars($error) ?></div>
@@ -84,7 +84,7 @@ if (isset($_POST['register'])) {
         </button>
       </form>
 
-      <!-- ✅ Login Button -->
+      <!-- Login Button -->
       <div class="mt-6 text-center">
         <a href="login.php"
            class="inline-block bg-gradient-to-r from-orange-700 to-orange-500 px-6 py-2 rounded text-white font-semibold hover:shadow-[0_0_15px_rgba(255,179,0,0.6)] transition-all">
@@ -99,5 +99,165 @@ if (isset($_POST['register'])) {
       </div>
     </div>
   </div>
+
+
+<script>
+ /**
+  * FormValidator Class
+  * Encapsulate all client-side validation
+  */
+
+  class FormValidator {
+    constructor(formId) {
+      this.form = document.getElementById(formId);
+      if (!this.form) {
+        console.error('Form with ID ${formId} not found.');
+        return;
+      }
+      this.inputs = {
+        username: document.getElementById('username'),
+        email: document.getElementById('email'),
+        password: document.getElementById('password'),
+        confirm: document.getElementById('confirm'),
+      };
+      this.errors = {
+        username: document.getElementById('usernameError'),
+        email: document.getElementById('emailError'),
+        password: document.getElementById('passwordError'),
+        confirm: document.getElementById('confirmError'),
+      };
+      this.phpErrorBox = document.getElementById('php-error');
+      this.init();
+    }
+
+    // Error handling 
+
+    displayError(element, message) {
+      element.textContent = message;
+      element.classList.add('visible');
+    }
+
+    clearError(element) {
+      element.textContent = '';
+      element.classList.remove('visible');
+    }
+
+    // validation logic methods
+
+    validateField(fieldName) {
+      const input = this.inputs[fieldName];
+      const errorElement = this.errors[fieldName];
+      const value = input.value.trim();
+      let message = '';
+      let isValid = true;
+
+      switch (fieldName) {
+        case 'username':
+          if (value === '') {
+            message = 'Username is required.';
+            isValid = false;
+          }
+          break;
+
+      case 'email':
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (value === '') {
+          message = 'Email is required.';
+          isValid = false;
+        } else if (!emailRegex.test(value)) {
+          message = 'Please enter a valid email address.';
+          isValid = false;
+        }
+        break;
+
+      case 'password':
+        if (value === '') {
+          messsage = 'Password is required.';
+          isValid = false;
+        } else if (value.length < 6) {
+          message = 'Password must be at least 6 characters.';
+          isValid = false;
+        }
+        // Re validate confirm field if password changes
+        if (isValid && this.inputs.confirm.value !== '') {
+            this.validateField('confirm');
+        }
+        break;
+
+      case 'confirm':
+        const passwordValue = this.inputs.password.value;
+        if (value === '') {
+          message = 'Confirmation is required.';
+          isValid = false;
+        } else if (passwordValue !== value) {
+          message = 'Passwords do not match!';
+          isValid = false;
+        }
+        break;
+      }
+
+      if (isValid) {
+        this.clearErrors(errorElement);
+      } else {
+        this.displayError(errorElement, message);
+      }
+      return isValid;
+    }
+
+    validateAll() {
+      let allValid = true;
+      // Validate fields in order
+      ['username', 'email', 'password', 'confirm'].forEach(fieldName => {
+        // Use a non-short-circuiting check 
+        if (!this.validateField(fieldName)) {
+         allValid = false;
+        }
+      });
+      return allValid;
+    }
+
+    // Intialization and Event Binding
+
+    init() {
+      // Bind real-time validation to all input events
+      Object.keys(this.inputs).forEach(fieldName => {
+        this.inputs[fieldName].addEventListener('input', () => {
+          this.validateField(fieldName);
+        });
+      });
+
+      // Bind form submission event
+      this.form.addEventListener('submit', (e) => this.handleSubmit(e));
+    }
+
+    handleSubmit(e) {
+      // Clear previous PHP error message if it exists
+      if (this.phpErrorBox) {
+          this.phpErrorBox.style.display = 'none'
+      }
+
+      if (!this.validateAll()) {
+        e.preventDefault();
+
+        // Find the first invalid field and focus on it
+        const firstInvalidField = ['username', 'email', 'password', 'confirm'].find(fieldName => {
+          // Check if the corresponding error message is visible
+          return this.errors[fieldName].classList.contains('visible');
+        });
+
+        if (firstInvalidField) {
+          this.inputs[firstInvalidField].focus();
+        }
+      }
+      // IF VALIDATEALL RETURNS TRUE, THE FORM SUBMITS NORMALLY TO PHP
+    }
+  }
+
+  // INITIALIZE THE VALIDATOR WHEN THE DOM IS READY
+  document.addEventListener('DOMContentLoaded', () => {
+    // Create a single isntance of the validator for the registration form
+    new FormValidator('registrationForm');
+  });
+  </script>
 </body>
 </html>
